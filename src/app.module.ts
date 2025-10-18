@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { TwilioModule } from './modules/twilioSMS/twilio.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TwilioModule } from './modules/twilioSMS/twilio.module';
     AuthModule,
     OtpModule,
     TwilioModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}
