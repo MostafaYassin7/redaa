@@ -4,17 +4,14 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '../entities/user.entity';
 import { TwilioService } from '../../twilioSMS/services/twilioSms.service';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly twilioService: TwilioService,
   ) {}
@@ -30,9 +27,9 @@ export class AuthService {
     // Normalize phone number — e.g., remove spaces and dashes
     phoneNumber = phoneNumber.replace(/\s|-/g, '');
 
-    let user = await this.userRepo.findOne({ where: { phoneNumber } });
+    let user = await this.usersService.findByPhoneNumber(phoneNumber);
     if (!user) {
-      user = this.userRepo.create({ phoneNumber });
+      user = await this.usersService.create({ phoneNumber });
     }
 
     // Generate a 6-digit random OTP
@@ -42,7 +39,7 @@ export class AuthService {
     user.otp = otp;
     user.otpExpiresAt = expiresAt;
 
-    await this.userRepo.save(user);
+    await this.usersService.save(user);
 
     try {
       // Send OTP via Twilio SMS
@@ -66,7 +63,7 @@ export class AuthService {
     if (!phoneNumber || !otp)
       throw new BadRequestException('Phone number and OTP are required');
 
-    const user = await this.userRepo.findOne({ where: { phoneNumber } });
+    const user = await this.usersService.findByPhoneNumber(phoneNumber);
     if (!user) throw new UnauthorizedException('User not found');
 
     if (!user.otp || user.otp !== otp)
@@ -79,7 +76,7 @@ export class AuthService {
     // Clear OTP after success
     user.otp = null;
     user.otpExpiresAt = null;
-    await this.userRepo.save(user);
+    await this.usersService.save(user);
 
     const payload = { sub: user.id, phoneNumber: user.phoneNumber };
     const token = this.jwtService.sign(payload);
@@ -98,16 +95,13 @@ export class AuthService {
     const { googleId, email } = profile;
     if (!email) throw new BadRequestException('Google profile missing email');
 
-    let user = await this.userRepo.findOne({
-      where: [{ googleId }, { email }],
-    });
+    let user = await this.usersService.findOne([{ googleId }, { email }]);
 
     if (!user) {
-      user = this.userRepo.create({ googleId, email });
-      await this.userRepo.save(user);
+      user = await this.usersService.create({ googleId, email });
     } else if (!user.googleId) {
       user.googleId = googleId;
-      await this.userRepo.save(user);
+      await this.usersService.save(user);
     }
 
     const payload = { sub: user.id, email: user.email };
