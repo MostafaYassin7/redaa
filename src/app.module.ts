@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { TwilioModule } from './modules/twilioSMS/twilio.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -18,9 +20,11 @@ import { TwilioModule } from './modules/twilioSMS/twilio.module';
       autoLoadEntities: true,
       synchronize: false,
     }),
+    UsersModule,
     AuthModule,
     OtpModule,
     TwilioModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}
